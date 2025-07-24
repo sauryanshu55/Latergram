@@ -1,16 +1,15 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Expo
 .expo/
 dist/
 web-build/
-expo-env.d.ts
 
 # Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -32,8 +31,99 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
 
-app-example
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - WebStorm
+.idea/
+
+# Temporary folders
+tmp/
+temp/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Android
+android/app/build/
+android/app/release/
+android/gradle/
+android/.gradle/
+android/captures/
+android/keystore.properties
+*.apk
+*.aab
+
+# iOS
+ios/build/
+ios/Pods/
+ios/.xcode.proj/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Firebase (will be added later)
+google-services.json
+GoogleService-Info.plist
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Amplify (if used later)
+amplify/\#current-cloud-backend
+amplify/.config/local-*
+amplify/logs
+amplify/mock-data
+amplify/backend/amplify-meta.json
+amplify/backend/awscloudformation
+amplify/backend/.temp
+build/
+dist/
+node_modules/
+aws-exports.js
+awsconfiguration.json
+amplifyconfiguration.json
+amplifyconfiguration.dart
+amplify-build-config.json
+amplify-gradle-config.json
+amplifytools.xcconfig
+.secret-*
+
+# EAS
+.easignore
