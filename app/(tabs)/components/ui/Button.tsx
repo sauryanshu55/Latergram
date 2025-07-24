@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-    ActivityIndicator,
-    StyleSheet,
-    Text,
-    TextStyle,
-    TouchableOpacity,
-    ViewStyle,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
 } from 'react-native';
 import { BorderRadius, Colors, Spacing, Typography } from '../../../constants';
 
@@ -32,12 +32,12 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   fullWidth = false,
 }) => {
-  const buttonStyle = [
+  const buttonStyle: ViewStyle[] = [
     styles.base,
     styles[variant],
     styles[size],
-    fullWidth && styles.fullWidth,
-    disabled && styles.disabled,
+    fullWidth ? styles.fullWidth : undefined,
+    disabled ? styles.disabled : undefined,
     style,
   ].filter(Boolean) as ViewStyle[];
 

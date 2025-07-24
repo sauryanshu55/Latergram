@@ -1,3 +1,5 @@
+// app/index.tsx (Home Screen)
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -9,8 +11,7 @@ import { Colors, Spacing } from './constants';
 
 export default function HomeScreen() {
   const handleEnterCode = () => {
-    console.log('Enter code pressed');
-    // Navigate to enter code screen
+    router.push('/enter-code');
   };
 
   const handleScanCode = () => {
