@@ -1,10 +1,10 @@
 // app/index.tsx (Home Screen)
+import { testFirebaseConnection } from '@/src/utils/firebaseTest';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
 import { Logo, SafeContainer } from './(tabs)/components/common';
 import { Button, Card, Divider } from './(tabs)/components/ui';
 import { Colors, Spacing } from './constants';
@@ -23,6 +23,7 @@ export default function HomeScreen() {
     console.log('Create event pressed');
     // Navigate to create event screen
   };
+
 
   return (
     <SafeAreaProvider>
@@ -73,6 +74,10 @@ export default function HomeScreen() {
                 />
               </View>
             </Card>
+
+            <TouchableOpacity onPress={() => testFirebaseConnection()}>
+              <Text>Test Firebase</Text>
+            </TouchableOpacity>
 
             {/* Bottom Spacing */}
             <View style={styles.bottomSpacer} />
