@@ -1,4 +1,3 @@
-
 import { BorderRadius, Colors, Spacing, Typography } from '@/components/constants';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -11,7 +10,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
-interface OTPInputProps {
+interface CodeInputProps {
   length?: number;
   onComplete?: (code: string) => void;
   onCodeChange?: (code: string) => void;
@@ -20,7 +19,7 @@ interface OTPInputProps {
   disabled?: boolean;
 }
 
-export const CodeInput: React.FC<OTPInputProps> = ({
+export const CodeInput: React.FC<CodeInputProps> = ({
   length = 6,
   onComplete,
   onCodeChange,
@@ -43,8 +42,8 @@ export const CodeInput: React.FC<OTPInputProps> = ({
   useEffect(() => {
     const currentCode = code.join('');
     onCodeChange?.(currentCode);
-    
-    if (currentCode.length === length && !currentCode.includes('')) {
+
+    if (currentCode.length === length && !currentCode.includes(' ')) {
       onComplete?.(currentCode);
       Keyboard.dismiss();
     }

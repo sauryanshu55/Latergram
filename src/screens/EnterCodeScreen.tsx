@@ -24,7 +24,6 @@ export default function EnterCodeScreen() {
   const handleCodeComplete = async (enteredCode: string) => {
     console.log('Code entered:', enteredCode);
     setIsLoading(true);
-
     try {
       // Here you would typically validate the code with your backend
       // For now, we'll simulate a delay and then navigate
