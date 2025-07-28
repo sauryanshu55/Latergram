@@ -1,7 +1,7 @@
 // app/components/common/Logo.tsx
+import { Colors, Typography } from '@/components/constants';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Typography } from '../../../constants';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -25,24 +25,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  
+
   text: {
     fontWeight: Typography.fontWeight.bold,
     color: Colors.primary.main,
     letterSpacing: -0.5,
   },
-  
+
   accent: {
     backgroundColor: Colors.secondary.main,
     borderRadius: 2,
     marginTop: 2,
   },
-  
+
   // Sizes
   sm: {},
   md: {},
   lg: {},
-  
+
   // Text sizes
   smText: {
     fontSize: Typography.fontSize.lg,
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   lgText: {
     fontSize: Typography.fontSize['4xl'],
   },
-  
+
   // Accent sizes
   smAccent: {
     width: 20,

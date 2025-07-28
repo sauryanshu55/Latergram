@@ -1,3 +1,4 @@
+import { BorderRadius, Colors, Spacing, Typography } from '@/components/constants';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
-import { BorderRadius, Colors, Spacing, Typography } from '../../../constants';
 
 interface ButtonProps {
   title: string;

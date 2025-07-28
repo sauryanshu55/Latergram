@@ -1,7 +1,7 @@
+import { Colors, Spacing } from '@/components/constants';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing } from '../../../constants';
 
 interface SafeContainerProps {
   children: React.ReactNode;

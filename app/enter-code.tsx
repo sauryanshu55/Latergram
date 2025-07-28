@@ -1,4 +1,2 @@
-// app/enter-code.tsx
-import EnterCodeScreen from './screens/EnterCodeScreen';
-
+import EnterCodeScreen from '../src/screens/EnterCodeScreen';
 export default EnterCodeScreen;

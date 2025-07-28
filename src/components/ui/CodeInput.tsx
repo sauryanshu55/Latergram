@@ -1,4 +1,5 @@
 
+import { BorderRadius, Colors, Spacing, Typography } from '@/components/constants';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
@@ -9,7 +10,6 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { BorderRadius, Colors, Spacing, Typography } from '../../../constants';
 
 interface OTPInputProps {
   length?: number;

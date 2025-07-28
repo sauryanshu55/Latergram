@@ -1,6 +1,6 @@
+import { Colors, Spacing, Typography } from '@/components/constants';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Spacing, Typography } from '../../../constants';
 
 interface DividerProps {
   text?: string;

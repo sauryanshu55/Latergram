@@ -1,22 +1,21 @@
 // app/screens/EnterCodeScreen.tsx
+import { SafeContainer } from '@/components/common';
+import { Colors, Spacing, Typography } from '@/components/constants';
+import { Card } from '@/components/ui';
+import { CodeInput } from '@/components/ui/CodeInput';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Keyboard,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-import { SafeContainer } from '../(tabs)/components/common';
-import { Card } from '../(tabs)/components/ui';
-import { CodeInput } from '../(tabs)/components/ui/CodeInput';
-import { Colors, Spacing, Typography } from '../constants';
 
 export default function EnterCodeScreen() {
   const [code, setCode] = useState('');
@@ -29,16 +28,16 @@ export default function EnterCodeScreen() {
     try {
       // Here you would typically validate the code with your backend
       // For now, we'll simulate a delay and then navigate
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // TODO: Replace with actual validation logic
       if (enteredCode === '123456') {
         // Navigate to event album screen (not yet implemented)
         console.log('Code validated successfully, navigating to event...');
         // router.push('/event-album'); // Will implement later
-        
+
         Alert.alert(
           'Success!',
           'Code validated successfully. Event album screen coming soon!',
@@ -89,7 +88,7 @@ export default function EnterCodeScreen() {
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <SafeContainer backgroundColor={Colors.background.secondary}>
           <StatusBar style="dark" backgroundColor={Colors.background.secondary} />
-          
+
           <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
@@ -119,7 +118,7 @@ export default function EnterCodeScreen() {
                   disabled={isLoading}
                   autoFocus={true}
                 />
-                
+
                 {isLoading && (
                   <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>Validating code...</Text>
@@ -131,7 +130,7 @@ export default function EnterCodeScreen() {
               <View style={styles.helpSection}>
                 <Text style={styles.helpText}>
                   Don't have a code?{' '}
-                  <Text 
+                  <Text
                     style={styles.helpLink}
                     onPress={() => {
                       Alert.alert(
