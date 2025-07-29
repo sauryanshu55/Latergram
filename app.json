@@ -17,9 +17,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff",
-         "googleServicesFile": "./google-services.json"
+        "googleServicesFile": "./google-services.json"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.sauryanshu55.latergram"
     },
     "web": {
       "bundler": "metro",
@@ -29,6 +30,13 @@
     "plugins": [
       "expo-router",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.735575110041-jbinl7bufubuqannp7lucah49jigqsp1"
+        }
+      ],
+      "expo-apple-authentication",
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -36,7 +44,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
