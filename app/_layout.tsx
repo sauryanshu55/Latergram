@@ -1,23 +1,14 @@
+import { AuthProvider } from '@/contexts/AuthContext';
 import { Stack } from 'expo-router';
 import React from 'react';
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen 
-        name="index" 
-        options={{ 
-          title: 'LaterGram',
-          headerShown: false 
-        }} 
-      />
-      <Stack.Screen 
-        name="enter-code" 
-        options={{ 
-          title: 'Enter Event Code',
-          headerBackTitle: 'Back'
-        }} 
-      />
-    </Stack>
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="enter-code" />
+      </Stack>
+    </AuthProvider>
   );
 }

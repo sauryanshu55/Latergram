@@ -1,18 +1,23 @@
-// app/screens/EnterCodeScreen.tsx
+// src/screens/EnterCodeScreen.tsx
+import { AuthModal } from '@/components/auth/AuthModal';
+import { QuickAuthButtons } from '@/components/auth/QuickAuthButtons';
 import { SafeContainer } from '@/components/common';
-import { Colors, Spacing, Typography } from '@/components/constants';
-import { Card } from '@/components/ui';
-import { CodeInput } from '@/components/ui/CodeInput';
+import { Colors, Spacing } from '@/components/constants';
+import { Button, Card } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
-  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,133 +25,201 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 export default function EnterCodeScreen() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [showAuthOptions, setShowAuthOptions] = useState(false);
+  
+  const { user, isAuthenticated } = useAuth();
+  const inputRef = useRef<TextInput>(null);
 
-  const handleCodeComplete = async (enteredCode: string) => {
-    console.log('Code entered:', enteredCode);
+  const handleCodeChange = (text: string) => {
+    // Only allow digits and limit to 6 characters
+    const numericCode = text.replace(/[^0-9]/g, '').slice(0, 6);
+    setCode(numericCode);
+  };
+
+  const handleJoinAlbum = async () => {
+    if (code.length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter a 6-digit code');
+      return;
+    }
+
     setIsLoading(true);
+    
     try {
-      // Here you would typically validate the code with your backend
-      // For now, we'll simulate a delay and then navigate
-
-      // Simulate API call
+      // TODO: Implement album joining logic
+      // This will check if the album exists and add the user to it
+      console.log('Joining album with code:', code);
+      
+      // For now, simulate a delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // TODO: Replace with actual validation logic
-      if (enteredCode === '123456') {
-        // Navigate to event album screen (not yet implemented)
-        console.log('Code validated successfully, navigating to event...');
-        // router.push('/event-album'); // Will implement later
-
-        Alert.alert(
-          'Success!',
-          'Code validated successfully. Event album screen coming soon!',
-          [{ text: 'OK' }]
-        );
-      } else {
-        // Show error for invalid code
-        Alert.alert(
-          'Invalid Code',
-          'The event code you entered is not valid. Please check and try again.',
-          [
-            {
-              text: 'Try Again',
-              onPress: () => {
-                // Clear the code and refocus
-                setCode('');
-              }
-            }
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error validating code:', error);
-      Alert.alert(
-        'Error',
-        'Something went wrong. Please try again.',
-        [{ text: 'OK' }]
-      );
+      
+      // Navigate to album view
+      // router.push(`/album/${code}`);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to join album');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCodeChange = (newCode: string) => {
-    setCode(newCode);
-  };
-
-  const handleGoBack = () => {
+  const handleBackPress = () => {
     router.back();
   };
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
+  const handleShowAuthOptions = () => {
+    setShowAuthOptions(true);
+  };
+
+  const handleSignIn = () => {
+    setAuthModalVisible(true);
+    setShowAuthOptions(false);
+  };
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={handleBackPress}
+      >
+        <Ionicons name="arrow-back" size={24} color={Colors.primary.main} />
+      </TouchableOpacity>
+      <Text style={styles.title}>Enter Event Code</Text>
+      <View style={styles.placeholder} />
+    </View>
+  );
+
+  const renderCodeInput = () => (
+    <Card style={styles.codeCard}>
+      <Text style={styles.instructionText}>
+        Enter the 6-digit code shared by the event host
+      </Text>
+      
+      <View style={styles.codeInputContainer}>
+        <TextInput
+          ref={inputRef}
+          style={styles.codeInput}
+          value={code}
+          onChangeText={handleCodeChange}
+          keyboardType="numeric"
+          placeholder="000000"
+          placeholderTextColor={Colors.neutral[900]}
+          maxLength={6}
+          autoFocus
+        />
+      </View>
+
+      <Button
+        title="Join Album"
+        onPress={handleJoinAlbum}
+        disabled={code.length !== 6 || isLoading}
+        style={styles.joinButton}
+      />
+
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={Colors.primary.main} />
+          <Text style={styles.loadingText}>Joining album...</Text>
+        </View>
+      )}
+    </Card>
+  );
+
+  const renderUserStatus = () => {
+    if (isAuthenticated && user) {
+      return (
+        <Card style={styles.userCard}>
+          <View style={styles.userInfo}>
+            <Ionicons 
+              name="checkmark-circle" 
+              size={24} 
+              color={Colors.success} 
+            />
+            <View style={styles.userDetails}>
+              <Text style={styles.signedInText}>Signed in as</Text>
+              <Text style={styles.userNameText}>
+                {user.displayName || user.email}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.benefitText}>
+            Your participation will be saved to your account
+          </Text>
+        </Card>
+      );
+    }
+
+    if (showAuthOptions) {
+      return (
+        <Card style={styles.authCard}>
+          <QuickAuthButtons 
+            onShowEmailAuth={handleSignIn}
+          />
+          <TouchableOpacity 
+            style={styles.continueAnonymousButton}
+            onPress={() => setShowAuthOptions(false)}
+          >
+            <Text style={styles.continueAnonymousText}>
+              Continue without signing in
+            </Text>
+          </TouchableOpacity>
+        </Card>
+      );
+    }
+
+    return (
+      <Card style={styles.anonymousCard}>
+        <View style={styles.anonymousHeader}>
+          <Ionicons 
+            name="person-outline" 
+            size={24} 
+            color={Colors.primary.light} 
+          />
+          <Text style={styles.anonymousTitle}>Join as Guest</Text>
+        </View>
+        <Text style={styles.anonymousDescription}>
+          You can view and add photos to this album anonymously. 
+          However, you won't be able to access it again without the code.
+        </Text>
+        <TouchableOpacity 
+          style={styles.signInPromptButton}
+          onPress={handleShowAuthOptions}
+        >
+          <Text style={styles.signInPromptText}>
+            Sign in to save this album to your account
+          </Text>
+          <Ionicons 
+            name="arrow-forward" 
+            size={16} 
+            color={Colors.primary.main} 
+          />
+        </TouchableOpacity>
+      </Card>
+    );
   };
 
   return (
     <SafeAreaProvider>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <SafeContainer backgroundColor={Colors.background.secondary}>
-          <StatusBar style="dark" backgroundColor={Colors.background.secondary} />
-
-          <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity
-                onPress={handleGoBack}
-                style={styles.backButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.backButtonText}>← Back</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Main Content */}
-            <View style={styles.content}>
-              <View style={styles.titleSection}>
-                <Text style={styles.title}>Enter Event Code</Text>
-                <Text style={styles.subtitle}>
-                  Enter the 6-digit code shared by the event organizer
-                </Text>
-              </View>
-
-              <Card style={styles.inputCard}>
-                <CodeInput
-                  length={6}
-                  onComplete={handleCodeComplete}
-                  onCodeChange={handleCodeChange}
-                  disabled={isLoading}
-                  autoFocus={true}
-                />
-
-                {isLoading && (
-                  <View style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Validating code...</Text>
-                  </View>
-                )}
-              </Card>
-
-              {/* Help Text */}
-              <View style={styles.helpSection}>
-                <Text style={styles.helpText}>
-                  Don't have a code?{' '}
-                  <Text
-                    style={styles.helpLink}
-                    onPress={() => {
-                      Alert.alert(
-                        'Need Help?',
-                        'Ask the event organizer to share the event code with you, or scan the QR code if available.',
-                        [{ text: 'Got it' }]
-                      );
-                    }}
-                  >
-                    Get help
-                  </Text>
-                </Text>
-              </View>
-            </View>
+      <SafeContainer backgroundColor={Colors.background.secondary}>
+        <StatusBar style="dark" backgroundColor={Colors.background.secondary} />
+        
+        <KeyboardAvoidingView 
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {renderHeader()}
+          
+          <View style={styles.content}>
+            {renderCodeInput()}
+            {renderUserStatus()}
           </View>
-        </SafeContainer>
-      </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+
+        <AuthModal
+          visible={authModalVisible}
+          onClose={() => setAuthModalVisible(false)}
+          initialMode="signin"
+        />
+      </SafeContainer>
     </SafeAreaProvider>
   );
 }
@@ -157,67 +230,139 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
   backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    marginLeft: -Spacing.md, // Compensate for padding to align with screen edge
+    padding: Spacing.sm,
   },
-  backButtonText: {
-    fontSize: Typography.fontSize.base,
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: Colors.primary.main,
-    fontWeight: Typography.fontWeight.medium,
+  },
+  placeholder: {
+    width: 40, // Same width as back button for centering
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    paddingBottom: Spacing['3xl'], // Extra bottom padding
+    gap: Spacing.lg,
   },
-  titleSection: {
+  codeCard: {
     alignItems: 'center',
-    marginBottom: Spacing['2xl'],
   },
-  title: {
-    fontSize: Typography.fontSize['3xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.neutral[800],
+  instructionText: {
+    fontSize: 16,
+    color: Colors.primary.light,
     textAlign: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.neutral[600],
+  codeInputContainer: {
+    marginBottom: Spacing.lg,
+  },
+  codeInput: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: Colors.primary.main,
     textAlign: 'center',
-    lineHeight: Typography.fontSize.base * Typography.lineHeight.relaxed,
-    paddingHorizontal: Spacing.md,
+    letterSpacing: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary.main,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    minWidth: 200,
   },
-  inputCard: {
-    marginBottom: Spacing.xl,
-    paddingVertical: Spacing.xl,
+  joinButton: {
+    width: '100%',
   },
   loadingContainer: {
-    marginTop: Spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
   },
   loadingText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[500],
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: 14,
+    color: Colors.primary.light,
   },
-  helpSection: {
+  userCard: {
+    backgroundColor: Colors.success,
+    borderColor: Colors.success,
+    borderWidth: 1,
+  },
+  userInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
   },
-  helpText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[500],
+  userDetails: {
+    flex: 1,
+  },
+  signedInText: {
+    fontSize: 14,
+    color: Colors.primary.light,
+  },
+  userNameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary.main,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: Colors.success,
     textAlign: 'center',
   },
-  helpLink: {
+  authCard: {
+    alignItems: 'center',
+  },
+  continueAnonymousButton: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  continueAnonymousText: {
+    fontSize: 14,
+    color: Colors.primary.light,
+    textDecorationLine: 'underline',
+  },
+  anonymousCard: {
+    backgroundColor: Colors.warning,
+    borderColor: Colors.warning,
+    borderWidth: 1,
+  },
+  anonymousHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  anonymousTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.primary.main,
-    fontWeight: Typography.fontWeight.medium,
+  },
+  anonymousDescription: {
+    fontSize: 14,
+    color: Colors.primary.light,
+    marginBottom: Spacing.md,
+    lineHeight: 20,
+  },
+  signInPromptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary.light,
+    borderRadius: 8,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  signInPromptText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.primary.main,
   },
 });

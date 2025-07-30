@@ -10,7 +10,8 @@
       "@/config/*": ["./src/config/*"],
       "@/services/*": ["./src/services/*"],
       "@/types/*": ["./src/types/*"],
-      "@/utils/*": ["./src/utils/*"]
+      "@/utils/*": ["./src/utils/*"],
+      "@/firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"]
     }
   },
     "include": [
