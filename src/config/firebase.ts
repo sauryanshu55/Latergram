@@ -1,9 +1,10 @@
+// src/config/firebase.ts
 import { initializeApp } from 'firebase/app';
 import {
-    FacebookAuthProvider,
-    getAuth,
-    GoogleAuthProvider,
-    OAuthProvider
+  FacebookAuthProvider,
+  getAuth,
+  GoogleAuthProvider,
+  OAuthProvider
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
@@ -47,8 +48,8 @@ appleProvider.addScope('email');
 appleProvider.addScope('name');
 
 export {
-    appleProvider, auth,
-    db, facebookProvider, functions,
-    googleProvider, storage
+  appleProvider, auth,
+  db, facebookProvider, functions,
+  googleProvider, storage
 };
 export default app;
