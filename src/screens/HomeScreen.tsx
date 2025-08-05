@@ -1,4 +1,4 @@
-// src/screens/HomeScreen.tsx
+// src/screens/HomeScreen.tsx - Complete updated version
 import { AuthModal } from '@/components/auth/AuthModal';
 import { QuickAuthButtons } from '@/components/auth/QuickAuthButtons';
 import { Logo, SafeContainer } from '@/components/common';
@@ -21,7 +21,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [authModalVisible, setAuthModalVisible] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin');
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup'>('signin');
   
   const { user, isLoading, isAuthenticated, signOut } = useAuth();
 
@@ -31,27 +31,22 @@ export default function HomeScreen() {
 
   const handleScanCode = () => {
     console.log('Scan code pressed');
-    // Navigate to scan code screen
+    // Navigate to scan code screen (to be implemented)
   };
 
   const handleCreateEvent = () => {
     if (isAuthenticated) {
-      // Navigate to create event screen
-      console.log('Navigate to create event (authenticated user)');
+      // Navigate to create album screen
+      router.push('/create-album');
     } else {
       // Show auth options first
-      setAuthModalMode('signin');
+      setAuthModalInitialMode('signin');
       setAuthModalVisible(true);
     }
   };
 
-  const handleSignIn = () => {
-    setAuthModalMode('signin');
-    setAuthModalVisible(true);
-  };
-
-  const handleSignUp = () => {
-    setAuthModalMode('signup');
+  const handleShowEmailAuth = () => {
+    setAuthModalInitialMode('signin');
     setAuthModalVisible(true);
   };
 
@@ -83,113 +78,161 @@ export default function HomeScreen() {
             style={styles.signOutButton}
             onPress={handleSignOut}
           >
-            <Ionicons name="log-out-outline" size={20} color={Colors.primary.light} />
+            <Ionicons name="log-out-outline" size={20} color="#666" />
           </TouchableOpacity>
         </View>
       );
     }
 
-    return (
-      <View style={styles.authSection}>
-        <QuickAuthButtons 
-          onShowEmailAuth={handleSignIn}
-          style={styles.quickAuth}
-        />
-      </View>
-    );
-  };
-
-  const renderMainActions = () => (
-    <Card style={styles.mainCard}>
-      {/* Join Event Section */}
-      <View style={styles.joinSection}>
-        <Text style={styles.sectionTitle}>Join an Event Album</Text>
-        <View style={styles.buttonRow}>
-          <Button
-            title="Enter Code"
-            onPress={handleEnterCode}
-            variant="primary"
-            style={styles.halfButton}
-          />
-          <Button
-            title="Scan Code"
-            onPress={handleScanCode}
-            variant="outline"
-            style={styles.halfButton}
-          />
-        </View>
-      </View>
-
-      {/* Divider */}
-      <Divider text="OR" />
-
-      {/* Create Event Section */}
-      <View style={styles.createSection}>
-        <Text style={styles.sectionTitle}>Create Your Own</Text>
-        <Button
-          title={isAuthenticated ? "Create Event Album" : "Sign In to Create Album"}
-          onPress={handleCreateEvent}
-          variant="secondary"
-          style={styles.fullButton}
-        />
-        {!isAuthenticated && (
-          <Text style={styles.createHint}>
-            Sign in to create and manage your event albums
-          </Text>
-        )}
-      </View>
-    </Card>
-  );
-
-  const renderMyAlbums = () => {
-    if (!isAuthenticated) return null;
-
-    return (
-      <Card style={styles.myAlbumsCard}>
-        <View style={styles.myAlbumsHeader}>
-          <Text style={styles.sectionTitle}>My Albums</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.placeholderText}>
-          Your created and joined albums will appear here
-        </Text>
-      </Card>
-    );
+    return null;
   };
 
   return (
     <SafeAreaProvider>
-      <SafeContainer backgroundColor={Colors.background.secondary}>
-        <StatusBar style="dark" backgroundColor={Colors.background.secondary} />
-
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
+      <SafeContainer>
+        <StatusBar style="auto" />
+        
+        <ScrollView 
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.container}>
-            {/* Logo Section */}
-            <View style={styles.logoSection}>
-              <Logo size="lg" />
+          {/* Header */}
+          <View style={styles.header}>
+            <Logo size="lg" />
+            {renderUserSection()}
+          </View>
+
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Welcome Section */}
+            <View style={styles.welcomeSection}>
+              <Text style={styles.tagline}>
+                Capture memories, reveal them together
+              </Text>
+              <Text style={styles.description}>
+                Create photo albums for events where pictures stay hidden until everyone can enjoy them at the same time.
+              </Text>
             </View>
 
-            {/* User/Auth Section */}
-            {renderUserSection()}
+            {/* Action Cards */}
+            <View style={styles.actionCards}>
+              {/* Create Album Card */}
+              <Card style={styles.actionCard}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="camera-outline" size={32} color={Colors.primary.main} />
+                </View>
+                <Text style={styles.cardTitle}>Create Album</Text>
+                <Text style={styles.cardDescription}>
+                  Start a new event album and get a unique code to share
+                </Text>
+                <Button
+                  title={isAuthenticated ? "Create Album" : "Sign in to Create"}
+                  onPress={handleCreateEvent}
+                  style={styles.cardButton}
+                  variant="primary"
+                />
+              </Card>
 
-            {/* Main Action Card */}
-            {renderMainActions()}
+              {/* Join Album Card */}
+              <Card style={styles.actionCard}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="enter-outline" size={32} color={Colors.secondary.main} />
+                </View>
+                <Text style={styles.cardTitle}>Join Album</Text>
+                <Text style={styles.cardDescription}>
+                  Enter a 6-digit code to join an existing album
+                </Text>
+                <Button
+                  title="Enter Code"
+                  onPress={handleEnterCode}
+                  style={styles.cardButton}
+                  variant="secondary"
+                />
+              </Card>
 
-            {/* My Albums Section (only for authenticated users) */}
-            {renderMyAlbums()}
+              {/* Scan Code Card */}
+              <Card style={styles.actionCard}>
+                <View style={styles.cardIcon}>
+                  <Ionicons name="qr-code-outline" size={32} color={Colors.background.primary} />
+                </View>
+                <Text style={styles.cardTitle}>Scan Code</Text>
+                <Text style={styles.cardDescription}>
+                  Use your camera to scan a QR code
+                </Text>
+                <Button
+                  title="Scan QR Code"
+                  onPress={handleScanCode}
+                  style={styles.cardButton}
+                  variant="outline"
+                />
+              </Card>
+            </View>
+
+            {/* How it Works Section */}
+            <View style={styles.howItWorksSection}>
+              <Text style={styles.sectionTitle}>How LaterGram Works</Text>
+              
+              <View style={styles.steps}>
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Create & Share</Text>
+                    <Text style={styles.stepDescription}>
+                      Create an album and share the 6-digit code with friends
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Capture Moments</Text>
+                    <Text style={styles.stepDescription}>
+                      Everyone adds photos during the event, but no one can see them yet
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Reveal Together</Text>
+                    <Text style={styles.stepDescription}>
+                      After the "marination" period, all photos are revealed at once
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Auth Section for Non-authenticated Users */}
+            {!isAuthenticated && (
+              <View style={styles.authSection}>
+                <Divider style={styles.divider} />
+                <Text style={styles.authTitle}>Get Started</Text>
+                <Text style={styles.authDescription}>
+                  Sign in to create albums and manage your memories
+                </Text>
+                <QuickAuthButtons
+                  onShowEmailAuth={handleShowEmailAuth}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
 
         {/* Auth Modal */}
         <AuthModal
           visible={authModalVisible}
+          initialMode={authModalInitialMode}
           onClose={() => setAuthModalVisible(false)}
-          initialMode={authModalMode}
         />
       </SafeContainer>
     </SafeAreaProvider>
@@ -197,103 +240,158 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: Spacing.xl,
-  },
   container: {
     flex: 1,
-    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.background.primary,
   },
-  logoSection: {
-    alignItems: 'center',
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
+  contentContainer: {
+    paddingBottom: Spacing.xl,
+  },
+  header: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.sm,
   },
   welcomeContainer: {
     flex: 1,
   },
   welcomeText: {
     fontSize: 16,
-    color: Colors.primary.light
+    color: Colors.primary.light,
+    marginBottom: 2,
   },
   userName: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.primary.main,
-    marginTop: 2,
+    fontWeight: '600',
+    color: Colors.primary.dark,
   },
   signOutButton: {
     padding: Spacing.sm,
+    borderRadius: 8,
+    backgroundColor: Colors.background.secondary,
   },
-  authSection: {
-    marginBottom: Spacing.lg,
+  mainContent: {
+    paddingHorizontal: Spacing.lg,
   },
-  quickAuth: {
-    backgroundColor: Colors.background.primary,
-    borderRadius: 12,
-    marginHorizontal: Spacing.sm,
-  },
-  mainCard: {
-    marginBottom: Spacing.lg,
-  },
-  joinSection: {
-    paddingBottom: Spacing.md,
-  },
-  createSection: {
-    paddingTop: Spacing.md,
+  welcomeSection: {
     alignItems: 'center',
+    marginBottom: Spacing.xl,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.primary.main,
-    marginBottom: Spacing.md,
+  tagline: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.primary.dark,
     textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
-  buttonRow: {
-    flexDirection: 'row',
+  description: {
+    fontSize: 16,
+    color: Colors.primary.light,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  actionCards: {
+    marginBottom: Spacing.xl,
     gap: Spacing.md,
   },
-  halfButton: {
-    flex: 1,
-  },
-  fullButton: {
-    width: '100%',
-  },
-  createHint: {
-    fontSize: 12,
-    color: Colors.primary.light,
-    textAlign: 'center',
-    marginTop: Spacing.sm,
-  },
-  myAlbumsCard: {
-    marginBottom: Spacing.lg,
-  },
-  myAlbumsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  actionCard: {
     alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  cardIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.background.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.md,
   },
-  viewAllText: {
-    fontSize: 14,
-    color: Colors.primary.main,
-    fontWeight: '500',
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.primary.dark,
+    marginBottom: Spacing.xs,
   },
-  placeholderText: {
+  cardDescription: {
     fontSize: 14,
     color: Colors.primary.light,
     textAlign: 'center',
-    fontStyle: 'italic',
-    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.lg,
+    lineHeight: 20,
+  },
+  cardButton: {
+    minWidth: 160,
+  },
+  howItWorksSection: {
+    marginBottom: Spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.primary.dark,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  steps: {
+    gap: Spacing.lg,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+    marginTop: 2,
+  },
+  stepNumberText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.primary.dark,
+    marginBottom: Spacing.xs,
+  },
+  stepDescription: {
+    fontSize: 14,
+    color: Colors.primary.light,
+    lineHeight: 20,
+  },
+  authSection: {
+    alignItems: 'center',
+  },
+  divider: {
+    marginVertical: Spacing.xl,
+  },
+  authTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.primary.dark,
+    marginBottom: Spacing.xs,
+  },
+  authDescription: {
+    fontSize: 14,
+    color: Colors.primary.light,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
   },
 });
