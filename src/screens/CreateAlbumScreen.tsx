@@ -1,24 +1,42 @@
-// src/screens/CreateAlbumScreen.tsx
+// app/create-album.tsx - Simple version that works with Expo Go
 import { useAuth } from '@/contexts/AuthContext';
-import { albumService } from '@/services/albumService';
-import { CreateAlbumData } from '@/types/albums';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Simple types for now
+interface CreateAlbumData {
+  name: string;
+  description?: string;
+  eventDate: Date;
+  marinationEndDate: Date;
+  isPrivate?: boolean;
+  allowGuestUploads?: boolean;
+}
+
+// Simple album service for now
+const albumService = {
+  createAlbum: async (data: CreateAlbumData, user: any) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return {
+      id: Math.random().toString(36).substring(2, 8).toUpperCase()
+    };
+  }
+};
 
 export default function CreateAlbumScreen() {
   const { user } = useAuth();
@@ -36,42 +54,33 @@ export default function CreateAlbumScreen() {
     }
   );
   
-  // Date picker states
-  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
-  const [showMarinationDatePicker, setShowMarinationDatePicker] = useState(false);
-  
   // Advanced settings
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [allowGuestUploads, setAllowGuestUploads] = useState(true);
-  const [maxPhotosPerUser, setMaxPhotosPerUser] = useState('');
 
-  const handleEventDateChange = (event: any, selectedDate?: Date) => {
-    setShowEventDatePicker(false);
-    if (selectedDate) {
-      setEventDate(selectedDate);
-      
-      // Auto-adjust marination date if it's before the event date
-      if (marinationDate <= selectedDate) {
-        const newMarinationDate = new Date(selectedDate);
-        newMarinationDate.setDate(selectedDate.getDate() + 1);
-        setMarinationDate(newMarinationDate);
-      }
+  // Simple date adjustment functions
+  const adjustEventDate = (days: number) => {
+    const newDate = new Date(eventDate);
+    newDate.setDate(eventDate.getDate() + days);
+    setEventDate(newDate);
+    
+    // Auto-adjust marination date if needed
+    if (marinationDate <= newDate) {
+      const newMarinationDate = new Date(newDate);
+      newMarinationDate.setDate(newDate.getDate() + 1);
+      setMarinationDate(newMarinationDate);
     }
   };
 
-  const handleMarinationDateChange = (event: any, selectedDate?: Date) => {
-    setShowMarinationDatePicker(false);
-    if (selectedDate) {
-      if (selectedDate > eventDate) {
-        setMarinationDate(selectedDate);
-      } else {
-        Alert.alert(
-          'Invalid Date',
-          'Marination date must be after the event date.',
-          [{ text: 'OK' }]
-        );
-      }
+  const adjustMarinationDate = (days: number) => {
+    const newDate = new Date(marinationDate);
+    newDate.setDate(marinationDate.getDate() + days);
+    
+    if (newDate > eventDate) {
+      setMarinationDate(newDate);
+    } else {
+      Alert.alert('Invalid Date', 'Marination date must be after the event date.');
     }
   };
 
@@ -86,16 +95,8 @@ export default function CreateAlbumScreen() {
       return false;
     }
 
-    if (eventDate > new Date()) {
-      // For future events, ensure marination is after event
-      if (marinationDate <= eventDate) {
-        Alert.alert('Error', 'Marination date must be after the event date.');
-        return false;
-      }
-    }
-
-    if (maxPhotosPerUser && (isNaN(Number(maxPhotosPerUser)) || Number(maxPhotosPerUser) <= 0)) {
-      Alert.alert('Error', 'Maximum photos per user must be a positive number.');
+    if (marinationDate <= eventDate) {
+      Alert.alert('Error', 'Marination date must be after the event date.');
       return false;
     }
 
@@ -121,15 +122,14 @@ export default function CreateAlbumScreen() {
         eventDate,
         marinationEndDate: marinationDate,
         isPrivate,
-        allowGuestUploads,
-        maxPhotosPerUser: maxPhotosPerUser ? Number(maxPhotosPerUser) : undefined
+        allowGuestUploads
       };
 
       const createdAlbum = await albumService.createAlbum(albumData, user);
       
       // Navigate to album code screen
       router.replace({
-        pathname: '/album-created',
+        pathname: '/album-created' as any,
         params: { albumId: createdAlbum.id }
       });
       
@@ -224,33 +224,60 @@ export default function CreateAlbumScreen() {
             <Text style={styles.charCount}>{description.length}/200</Text>
           </View>
 
-          {/* Event Date */}
+          {/* Event Date - Simple Controls */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Event Date *</Text>
-            <TouchableOpacity 
-              style={styles.dateButton}
-              onPress={() => setShowEventDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#666" />
-              <Text style={styles.dateButtonText}>{formatDate(eventDate)}</Text>
-              <Ionicons name="chevron-down" size={20} color="#666" />
-            </TouchableOpacity>
+            <View style={styles.dateDisplay}>
+              <Text style={styles.dateText}>{formatDate(eventDate)}</Text>
+            </View>
+            <View style={styles.dateControls}>
+              <TouchableOpacity 
+                style={styles.dateControlButton}
+                onPress={() => adjustEventDate(-1)}
+              >
+                <Ionicons name="remove" size={20} color="#007AFF" />
+                <Text style={styles.dateControlText}>Yesterday</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.dateControlButton}
+                onPress={() => setEventDate(new Date())}
+              >
+                <Ionicons name="today" size={20} color="#007AFF" />
+                <Text style={styles.dateControlText}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.dateControlButton}
+                onPress={() => adjustEventDate(1)}
+              >
+                <Ionicons name="add" size={20} color="#007AFF" />
+                <Text style={styles.dateControlText}>Tomorrow</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Marination Date */}
+          {/* Marination Date - Simple Controls */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>When to Reveal Photos *</Text>
             <Text style={styles.sectionSubtitle}>
               Photos will be hidden until this date and time
             </Text>
-            <TouchableOpacity 
-              style={styles.dateButton}
-              onPress={() => setShowMarinationDatePicker(true)}
-            >
-              <Ionicons name="eye-outline" size={20} color="#666" />
-              <Text style={styles.dateButtonText}>{formatDateTime(marinationDate)}</Text>
-              <Ionicons name="chevron-down" size={20} color="#666" />
-            </TouchableOpacity>
+            <View style={styles.dateDisplay}>
+              <Text style={styles.dateText}>{formatDateTime(marinationDate)}</Text>
+            </View>
+            <View style={styles.dateControls}>
+              <TouchableOpacity 
+                style={styles.dateControlButton}
+                onPress={() => adjustMarinationDate(1)}
+              >
+                <Text style={styles.dateControlText}>+1 Day</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.dateControlButton}
+                onPress={() => adjustMarinationDate(7)}
+              >
+                <Text style={styles.dateControlText}>+1 Week</Text>
+              </TouchableOpacity>
+            </View>
             
             {getDaysUntilMarination() > 0 && (
               <Text style={styles.marinationInfo}>
@@ -305,22 +332,6 @@ export default function CreateAlbumScreen() {
                   <View style={[styles.toggleCircle, allowGuestUploads && styles.toggleCircleActive]} />
                 </TouchableOpacity>
               </View>
-
-              {/* Max Photos Per User */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Max Photos Per User</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Leave empty for unlimited photos
-                </Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={maxPhotosPerUser}
-                  onChangeText={setMaxPhotosPerUser}
-                  placeholder="e.g., 20"
-                  keyboardType="numeric"
-                  maxLength={3}
-                />
-              </View>
             </View>
           )}
         </ScrollView>
@@ -342,28 +353,6 @@ export default function CreateAlbumScreen() {
             )}
           </TouchableOpacity>
         </View>
-
-        {/* Date Pickers */}
-        {showEventDatePicker && (
-          <DateTimePicker
-            value={eventDate}
-            mode="date"
-            display="default"
-            onChange={handleEventDateChange}
-            maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
-          />
-        )}
-
-        {showMarinationDatePicker && (
-          <DateTimePicker
-            value={marinationDate}
-            mode="datetime"
-            display="default"
-            onChange={handleMarinationDateChange}
-            minimumDate={new Date(eventDate.getTime() + 60 * 60 * 1000)} // 1 hour after event
-            maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
-          />
-        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -443,21 +432,41 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
   },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  dateDisplay: {
+    backgroundColor: '#f8f9fa',
     borderWidth: 1,
     borderColor: '#e1e8ed',
     borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
+    padding: 16,
     marginTop: 8,
+    marginBottom: 12,
   },
-  dateButtonText: {
-    flex: 1,
+  dateText: {
     fontSize: 16,
     color: '#333',
-    marginLeft: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  dateControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 8,
+  },
+  dateControlButton: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  dateControlText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
   marinationInfo: {
     fontSize: 14,
