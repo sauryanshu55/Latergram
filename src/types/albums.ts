@@ -20,7 +20,6 @@ export interface EventAlbum {
   // Settings
   isPrivate: boolean; // Whether album requires approval to join
   allowGuestUploads: boolean; // Whether non-registered users can upload
-  maxPhotosPerUser?: number; // Optional limit
   
   // Status
   status: 'active' | 'marinated' | 'archived';
@@ -50,5 +49,4 @@ export interface CreateAlbumData {
   marinationEndDate: Date;
   isPrivate?: boolean;
   allowGuestUploads?: boolean;
-  maxPhotosPerUser?: number;
 }

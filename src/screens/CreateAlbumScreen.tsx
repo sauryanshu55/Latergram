@@ -1,5 +1,6 @@
-// app/create-album.tsx - Simple version that works with Expo Go
 import { useAuth } from '@/contexts/AuthContext';
+import { albumService } from '@/services/albumService';
+import { CreateAlbumData } from '@/types/albums';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -17,26 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Simple types for now
-interface CreateAlbumData {
-  name: string;
-  description?: string;
-  eventDate: Date;
-  marinationEndDate: Date;
-  isPrivate?: boolean;
-  allowGuestUploads?: boolean;
-}
-
-// Simple album service for now
-const albumService = {
-  createAlbum: async (data: CreateAlbumData, user: any) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return {
-      id: Math.random().toString(36).substring(2, 8).toUpperCase()
-    };
-  }
-};
+// Remove the local interface and service - now using real ones from imports
 
 export default function CreateAlbumScreen() {
   const { user } = useAuth();

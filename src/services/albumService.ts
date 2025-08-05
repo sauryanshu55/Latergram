@@ -1,18 +1,20 @@
-import { db } from '@/config/firebase';
 import { AlbumMember, CreateAlbumData, EventAlbum } from '@/types/albums';
 import {
-    arrayUnion,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    runTransaction,
-    serverTimestamp,
-    updateDoc,
-    where
+  arrayRemove,
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  updateDoc,
+  where,
+  writeBatch
 } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { LaterGramUser } from './authSevice';
 
 class AlbumService {
@@ -85,7 +87,6 @@ class AlbumService {
         
         isPrivate: albumData.isPrivate || false,
         allowGuestUploads: albumData.allowGuestUploads || true,
-        maxPhotosPerUser: albumData.maxPhotosPerUser,
         
         status: 'active',
         isMarinated: albumData.marinationEndDate <= new Date(),
@@ -118,6 +119,7 @@ class AlbumService {
         return { ...albumWithTimestamps, createdAt: new Date(), updatedAt: new Date() } as EventAlbum;
       });
 
+      console.log('Album created successfully:', albumId);
       return result;
     } catch (error) {
       console.error('Error creating album:', error);
@@ -161,10 +163,10 @@ class AlbumService {
         const albumDoc = await transaction.get(albumRef);
         
         if (!albumDoc.exists()) {
-          throw new Error('Album not found');
+          throw new Error('Album not found with this code');
         }
 
-        const albumData = albumDoc.data() as EventAlbum;
+        const albumData = albumDoc.data() as any;
         
         // Check if user is already a member
         if (albumData.memberIds.includes(user.uid)) {
@@ -180,10 +182,13 @@ class AlbumService {
           photoCount: 0
         };
 
-        // Update album
+        // Update album with new member
         transaction.update(albumRef, {
           memberIds: arrayUnion(user.uid),
-          memberDetails: arrayUnion(newMember),
+          memberDetails: arrayUnion({
+            ...newMember,
+            joinedAt: serverTimestamp()
+          }),
           updatedAt: serverTimestamp()
         });
 
@@ -193,15 +198,70 @@ class AlbumService {
           joinedAlbums: arrayUnion(albumId)
         });
 
+        // Return updated album data
         return {
           ...albumData,
+          eventDate: albumData.eventDate.toDate(),
+          marinationEndDate: albumData.marinationEndDate.toDate(),
+          createdAt: albumData.createdAt.toDate(),
+          updatedAt: new Date(),
           memberIds: [...albumData.memberIds, user.uid],
-          memberDetails: [...albumData.memberDetails, newMember],
-          updatedAt: new Date()
-        };
+          memberDetails: [...albumData.memberDetails.map((member: any) => ({
+            ...member,
+            joinedAt: member.joinedAt.toDate()
+          })), newMember]
+        } as EventAlbum;
       });
     } catch (error) {
       console.error('Error joining album:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to join album. Please try again.');
+    }
+  }
+
+  // Leave an album
+  async leaveAlbum(albumId: string, userId: string): Promise<void> {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const albumRef = doc(db, this.albumsCollection, albumId);
+        const albumDoc = await transaction.get(albumRef);
+        
+        if (!albumDoc.exists()) {
+          throw new Error('Album not found');
+        }
+
+        const albumData = albumDoc.data();
+        
+        // Can't leave if you're the creator
+        if (albumData.creatorId === userId) {
+          throw new Error('Album creator cannot leave the album');
+        }
+
+        // Remove from memberIds
+        const updatedMemberIds = albumData.memberIds.filter((id: string) => id !== userId);
+        
+        // Remove from memberDetails
+        const updatedMemberDetails = albumData.memberDetails.filter(
+          (member: any) => member.userId !== userId
+        );
+
+        // Update album
+        transaction.update(albumRef, {
+          memberIds: updatedMemberIds,
+          memberDetails: updatedMemberDetails,
+          updatedAt: serverTimestamp()
+        });
+
+        // Update user's joinedAlbums
+        const userRef = doc(db, this.usersCollection, userId);
+        transaction.update(userRef, {
+          joinedAlbums: arrayRemove(albumId)
+        });
+      });
+    } catch (error) {
+      console.error('Error leaving album:', error);
       throw error;
     }
   }
@@ -297,6 +357,89 @@ class AlbumService {
   // Validate album code format
   isValidAlbumCode(code: string): boolean {
     return /^[A-Z0-9]{6}$/.test(code);
+  }
+
+  // Delete album (only by creator)
+  async deleteAlbum(albumId: string, userId: string): Promise<void> {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const albumRef = doc(db, this.albumsCollection, albumId);
+        const albumDoc = await transaction.get(albumRef);
+        
+        if (!albumDoc.exists()) {
+          throw new Error('Album not found');
+        }
+
+        const albumData = albumDoc.data();
+        
+        // Only creator can delete
+        if (albumData.creatorId !== userId) {
+          throw new Error('Only the album creator can delete this album');
+        }
+
+        // Remove album from all members' arrays
+        const batch = writeBatch(db);
+        
+        for (const memberId of albumData.memberIds) {
+          const userRef = doc(db, this.usersCollection, memberId);
+          if (memberId === userId) {
+            // Remove from ownedAlbums for creator
+            batch.update(userRef, {
+              ownedAlbums: arrayRemove(albumId)
+            });
+          } else {
+            // Remove from joinedAlbums for members
+            batch.update(userRef, {
+              joinedAlbums: arrayRemove(albumId)
+            });
+          }
+        }
+
+        // Delete the album document
+        transaction.delete(albumRef);
+        
+        await batch.commit();
+      });
+    } catch (error) {
+      console.error('Error deleting album:', error);
+      throw error;
+    }
+  }
+
+  // Get album member count
+  async getAlbumMemberCount(albumId: string): Promise<number> {
+    try {
+      const album = await this.getAlbumById(albumId);
+      return album ? album.memberIds.length : 0;
+    } catch (error) {
+      console.error('Error getting member count:', error);
+      return 0;
+    }
+  }
+
+  // Check if user is album member
+  async isUserAlbumMember(albumId: string, userId: string): Promise<boolean> {
+    try {
+      const album = await this.getAlbumById(albumId);
+      return album ? album.memberIds.includes(userId) : false;
+    } catch (error) {
+      console.error('Error checking membership:', error);
+      return false;
+    }
+  }
+
+  // Get user's role in album
+  async getUserRoleInAlbum(albumId: string, userId: string): Promise<'creator' | 'member' | null> {
+    try {
+      const album = await this.getAlbumById(albumId);
+      if (!album) return null;
+      
+      const member = album.memberDetails.find(m => m.userId === userId);
+      return member ? member.role : null;
+    } catch (error) {
+      console.error('Error getting user role:', error);
+      return null;
+    }
   }
 }
 

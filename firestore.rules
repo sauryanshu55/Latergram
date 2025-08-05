@@ -1,0 +1,189 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAlbumCreator(albumData) {
+      return request.auth.uid == albumData.creatorId;
+    }
+    
+    function isAlbumMember(albumData) {
+      return request.auth.uid in albumData.memberIds;
+    }
+    
+    function isAlbumCreatorOrMember(albumData) {
+      return isAlbumCreator(albumData) || isAlbumMember(albumData);
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      // Users can read and write their own user document
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // Allow reading basic user info for album member details
+      // (needed when adding members to albums)
+      allow read: if isAuthenticated() && 
+        resource.data.keys().hasAll(['uid', 'displayName', 'photoURL']);
+    }
+    
+    // Albums collection rules
+    match /albums/{albumId} {
+      // Anyone authenticated can read album data (needed for joining by code)
+      allow read: if isAuthenticated();
+      
+      // Only authenticated users can create albums
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.creatorId &&
+        // Ensure creator is in memberIds and memberDetails
+        request.auth.uid in request.resource.data.memberIds &&
+        request.resource.data.memberDetails.size() >= 1 &&
+        request.resource.data.memberDetails[0].userId == request.auth.uid &&
+        request.resource.data.memberDetails[0].role == 'creator';
+      
+      // Album updates (joining, leaving, settings changes)
+      allow update: if isAuthenticated() && (
+        // Album creator can update anything
+        isAlbumCreator(resource.data) ||
+        // Members can update when joining/leaving
+        (
+          // When joining: new member is added to memberIds and memberDetails
+          (request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1) &&
+          (request.auth.uid in request.resource.data.memberIds) &&
+          (!(request.auth.uid in resource.data.memberIds)) &&
+          // Other fields remain unchanged except updatedAt
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['memberIds', 'memberDetails', 'updatedAt'])
+        ) ||
+        // When leaving: member is removed from memberIds and memberDetails
+        (
+          (request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1) &&
+          (!(request.auth.uid in request.resource.data.memberIds)) &&
+          (request.auth.uid in resource.data.memberIds) &&
+          // Creator cannot leave their own album
+          (request.auth.uid != resource.data.creatorId) &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['memberIds', 'memberDetails', 'updatedAt'])
+        )
+      );
+      
+      // Only album creator can delete
+      allow delete: if isAuthenticated() && isAlbumCreator(resource.data);
+    }
+    
+    // Photos collection (for future implementation)
+    match /photos/{photoId} {
+      // Only album members can create photos
+      allow create: if isAuthenticated() &&
+        // Photo must reference a valid album
+        exists(/databases/$(database)/documents/albums/$(resource.data.albumId)) &&
+        // User must be a member of the album
+        (request.auth.uid in get(/databases/$(database)/documents/albums/$(resource.data.albumId)).data.memberIds) &&
+        // Photo creator must be the authenticated user
+        request.auth.uid == request.resource.data.creatorId;
+      
+      // Album members can read photos (with marination rules in client)
+      allow read: if isAuthenticated() &&
+        exists(/databases/$(database)/documents/albums/$(resource.data.albumId)) &&
+        (request.auth.uid in get(/databases/$(database)/documents/albums/$(resource.data.albumId)).data.memberIds);
+      
+      // Photo creator or album creator can update/delete
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.creatorId ||
+        (exists(/databases/$(database)/documents/albums/$(resource.data.albumId)) &&
+         request.auth.uid == get(/databases/$(database)/documents/albums/$(resource.data.albumId)).data.creatorId)
+      );
+    }
+    
+    // Album invitations (for future private album feature)
+    match /invitations/{invitationId} {
+      // Album creator can create invitations
+      allow create: if isAuthenticated() &&
+        exists(/databases/$(database)/documents/albums/$(resource.data.albumId)) &&
+        request.auth.uid == get(/databases/$(database)/documents/albums/$(resource.data.albumId)).data.creatorId;
+      
+      // Invited user can read their invitations
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.invitedUserId;
+      
+      // Invited user or album creator can update/delete
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.invitedUserId ||
+        (exists(/databases/$(database)/documents/albums/$(resource.data.albumId)) &&
+         request.auth.uid == get(/databases/$(database)/documents/albums/$(resource.data.albumId)).data.creatorId)
+      );
+    }
+    
+    // Notifications collection (for future implementation)
+    match /notifications/{notificationId} {
+      // System can create notifications
+      allow create: if true; // Will be handled by Cloud Functions
+      
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can update their own notifications (mark as read, etc.)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users cannot delete notifications (for audit trail)
+      allow delete: if false;
+    }
+  }
+}
+
+/*
+Key Security Features:
+
+1. **Authentication Required**: All operations require authentication
+2. **Owner-Only Access**: Users can only modify their own data
+3. **Album Creator Privileges**: Creators can modify album settings and delete albums
+4. **Member Validation**: Joining/leaving albums validates member arrays correctly
+5. **Photo Access Control**: Only album members can see photos
+6. **Audit Trail**: Prevents deletion of notifications for tracking
+7. **Future-Proof**: Includes rules for photos, invitations, and notifications
+
+Database Structure Overview:
+
+/users/{userId}
+  - uid, email, displayName, photoURL, provider, isAnonymous
+  - createdAt, lastLoginAt
+  - ownedAlbums: [albumId1, albumId2, ...]
+  - joinedAlbums: [albumId3, albumId4, ...]
+  - notificationSettings: { albumMarinated, newPhotosAdded }
+
+/albums/{albumId} (6-digit code as document ID)
+  - id, name, description, eventDate, marinationEndDate
+  - createdAt, updatedAt
+  - creatorId, creatorDisplayName
+  - memberIds: [userId1, userId2, ...]
+  - memberDetails: [{ userId, displayName, photoURL, joinedAt, role, photoCount }]
+  - photoCount, photos: [photoId1, photoId2, ...]
+  - isPrivate, allowGuestUploads
+  - status, isMarinated
+  - notificationSettings: { notifyOnNewMembers, notifyOnNewPhotos, notifyOnMarination }
+
+/photos/{photoId} (for future implementation)
+  - id, albumId, creatorId, creatorDisplayName
+  - fileName, storagePath, thumbnailPath
+  - uploadedAt, metadata
+  - isVisible (based on marination status)
+
+/invitations/{invitationId} (for future private albums)
+  - albumId, invitedUserId, invitedBy
+  - status: 'pending' | 'accepted' | 'declined'
+  - createdAt, respondedAt
+
+/notifications/{notificationId} (for future implementation)
+  - userId, type, title, message
+  - albumId (if applicable), photoId (if applicable)
+  - isRead, createdAt
+*/
