@@ -1,3 +1,4 @@
+// src/services/albumService.ts - Complete file with undefined value fixes
 import { AlbumMember, CreateAlbumData, EventAlbum } from '@/types/albums';
 import {
   arrayRemove,
@@ -61,14 +62,18 @@ class AlbumService {
     try {
       const albumId = await this.generateUniqueCode();
       
-      const creatorMember: AlbumMember = {
+      // Create creator member object, filtering out undefined values
+      const creatorMemberBase = {
         userId: creator.uid,
         displayName: creator.displayName || 'Unknown User',
-        photoURL: creator.photoURL || undefined,
         joinedAt: new Date(),
-        role: 'creator',
+        role: 'creator' as const,
         photoCount: 0
       };
+
+      const creatorMember: AlbumMember = creator.photoURL 
+        ? { ...creatorMemberBase, photoURL: creator.photoURL }
+        : creatorMemberBase;
 
       const album: Omit<EventAlbum, 'createdAt' | 'updatedAt'> = {
         id: albumId,
@@ -173,22 +178,42 @@ class AlbumService {
           throw new Error('You are already a member of this album');
         }
 
-        const newMember: AlbumMember = {
+        // Create new member object, filtering out undefined values
+        const newMemberBase = {
           userId: user.uid,
           displayName: user.displayName || 'Unknown User',
-          photoURL: user.photoURL || undefined,
           joinedAt: new Date(),
-          role: 'member',
+          role: 'member' as const,
           photoCount: 0
         };
+
+        // Only add photoURL if it's not null/undefined
+        const newMember: AlbumMember = user.photoURL 
+          ? { ...newMemberBase, photoURL: user.photoURL }
+          : newMemberBase;
+
+        // Create member object for Firestore (using Date instead of serverTimestamp for arrays)
+        const firestoreMember = user.photoURL 
+          ? {
+              userId: user.uid,
+              displayName: user.displayName || 'Unknown User',
+              photoURL: user.photoURL,
+              joinedAt: new Date(), // ✅ Use Date instead of serverTimestamp for arrays
+              role: 'member',
+              photoCount: 0
+            }
+          : {
+              userId: user.uid,
+              displayName: user.displayName || 'Unknown User',
+              joinedAt: new Date(), // ✅ Use Date instead of serverTimestamp for arrays
+              role: 'member',
+              photoCount: 0
+            };
 
         // Update album with new member
         transaction.update(albumRef, {
           memberIds: arrayUnion(user.uid),
-          memberDetails: arrayUnion({
-            ...newMember,
-            joinedAt: serverTimestamp()
-          }),
+          memberDetails: arrayUnion(firestoreMember),
           updatedAt: serverTimestamp()
         });
 
